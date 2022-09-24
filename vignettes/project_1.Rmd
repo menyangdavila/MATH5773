@@ -1,0 +1,174 @@
+---
+title: "Project 1"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Project 1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5773FALLdavi0682)
+```
+
+
+This project includes three functions:
+1. One-way table analysis
+2. Two-way table analysis
+3. Fisher's test
+
+# One-way table analysis
+With an input of a file name, this function will output a table, bar plots, the results for hypothesis test (all cell proportions are not significantly different), and confidence intervals for all cell values. 
+```{r}
+my_one_way <- function (filename, alpha = 0.05){
+  # Import the data
+  scan <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/",filename,'.xls'))
+
+  # Form the table
+  Number <- scan$NUMBER
+  Category <- scan$CATEGORY
+  margin_tab <- addmargins(xtabs(Number ~ CATEGORY, data = scan))
+
+  # Bar plot
+  gg <- ggplot2::ggplot(data = scan, mapping = ggplot2::aes(x = Category, y = Number, fill = Category)) +
+    ggplot2::geom_bar(stat="identity", position = "dodge") +
+    ggplot2::geom_text(ggplot2::aes(label = Number), vjust = -0.2, size = 5, position = ggplot2::position_dodge(0.9)) +
+    ggplot2::ylim(0, max(Number)*1.1) +
+    ggplot2::labs(title = "Equifax/Harris Consumer Privacy Survey", subtitle = "Scan",
+                  x = "Response Category", y = "Number of Users")
+
+  # Hypothesis test
+  tab <- table(rep(Category, Number))
+  freq1way <- s20x::freq1way(tab,hypothprob = rep(1/length(Category),length(Category)), conf.level = alpha)
+
+  df <- as.data.frame(rep(Category, Number))
+  names(df) <- "Response_Category"
+
+  # Z statistics
+  z = qnorm(1-alpha/2)
+  phat = Number/sum(Number)
+
+  # Confidence interval
+  cil = phat-z*sqrt(phat*(1-phat)/sum(Number))
+  ciu = phat+z*sqrt(phat*(1-phat)/sum(Number))
+  ci = list(cil,ciu)
+
+  conf_int = paste0("The approximate confidence interval for the frequency is", Category, " is: (",
+                    round(as.numeric(unlist(ci[1])),3), ", ",round(as.numeric(unlist(ci[2])),3), ").")
+
+  # Output list
+  list(table = margin_tab, plot = gg, hypothesis = freq1way, confidence_interval = conf_int)
+}
+```
+
+# Two-way analysis
+With an input of a file name, this function will output a contingency table, bar plots, expected frequencies for all cells, Chi-squared test results, and a plot of chi-squared test rejection region. 
+```{r}
+my_two_way = function (filename, alpha = 0.05){
+
+  # Import the data
+  hybrid <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/",filename,'.xls'))
+
+  Number <- hybrid$Number
+  Model <- hybrid$Model
+  Claim <- hybrid$Claim
+
+  # Form the contingency table
+  tab <- xtabs(Number ~ Model + Claim, data = hybrid)
+  margin_tab <- addmargins(tab)
+
+  nr = nrow(tab)
+  nc = ncol(tab)
+  n = sum(tab)
+
+  margin_row = apply(tab,1,sum)
+  margin_col = apply(tab,2,sum)
+
+  # Bar plot
+  gg1 <- ggplot2::ggplot(hybrid, ggplot2::aes(x = factor(Model), y = Number, fill = Claim, colour = Claim)) +
+    ggplot2::geom_bar(stat = "identity", position = "dodge")
+
+  gg2 <- ggplot2::ggplot(hybrid, ggplot2::aes(x = factor(Model), y = Number, fill = Claim, colour = Claim)) +
+    ggplot2::geom_bar(stat = "identity")
+
+  # Expected frequency
+  expect_freq = matrix(rep(margin_col,nr), nrow=nr, ncol=nc,byrow = TRUE)*margin_row/n
+
+  # Individual chi squared
+  ind_chiq = matrix((tab-expect_freq)^2/expect_freq, nrow=nr, ncol=nc)
+
+  # Sum of chi square
+  chsqsum = sum(ind_chiq)
+  chsq = chisq.test(tab)
+
+  # Find the rejection region
+  rej = qchisq(1-alpha,chsq$parameter)
+
+  # Plot the rejection area
+
+  # Create density curve
+  x <- NULL
+  curve(dchisq(x, df = chsq$parameter), from = 0, to = 8, main = 'Chi-Square Distribution', ylab = 'Density',lwd = 2)
+
+  # Create vector of x values
+  x_vector <- seq(qchisq(1-alpha,chsq$parameter), 8)
+
+  # Create vector of chi-square density values
+  p_vector <- dchisq(x_vector, df = chsq$parameter)
+
+  # Fill in portion of the density plot from 0 to 8
+  polygon(c(x_vector, rev(x_vector)), c(p_vector, rep(0, length(p_vector))), col = adjustcolor('red', alpha.f = 0.3), border = NA)
+
+  # Output the list
+  list(tab = tab, bar_plot_1 = gg1, bar_plot_2 = gg2, exp_freq = expect_freq, chi_sq = round(ind_chiq, digits = 4), chi_sq_sum = chsqsum, p_value = chsq$p.value, degree_of_freedom = chsq$parameter, reject_region = rej)
+
+}
+```
+
+# Fisher's test
+With an input of file name, this function will output a contingency table, bar plots, mosaic plot, Chi-squared test, and fisher's test. 
+```{r}
+my_fishser = function (filename){
+
+  # Import the data
+  bonding <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/",filename,'.xls'))
+
+  NUMBER <- bonding$NUMBER
+  ADHESIVE <- bonding$ADHESIVE
+  ARIScore <- bonding$ARIScore
+
+  # Form the contingency table
+  tab <- xtabs(NUMBER ~ ADHESIVE + ARIScore, data = bonding)
+  margin_tab <- addmargins(tab)
+
+  # Bar plot
+  gg1 <- ggplot2::ggplot(bonding, ggplot2::aes(x = factor(ARIScore), y = NUMBER, fill = ADHESIVE, colour = ADHESIVE)) +
+    ggplot2::geom_bar(stat = "identity", position = "dodge")
+
+  gg2 <- ggplot2::ggplot(bonding, ggplot2::aes(x = factor(ARIScore), y = NUMBER, fill = ADHESIVE, colour = ADHESIVE)) +
+    ggplot2::geom_bar(stat = "identity")
+
+  # Mosaic plot
+  mos <- mosaicplot(tab, main = "Mosaic plot", color = TRUE)
+
+  # Chi-squared test
+  chi_test <- chisq.test(tab)
+
+  # Fisher's test
+  fisher_test <- fisher.test(tab)
+
+
+  #Output the list
+  list(tab = margin_tab, bar_plot_1 = gg1, bar_plot_2 = gg2, mpsaic_plot = mos, exp_freq = chi_test$expected, fishers_test = fisher_test, p_value = fisher_test$p.value)
+
+}
+
+```
+

@@ -13,3 +13,7 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+Imports: 
+    ggplot2,
+    readxl,
+    s20x

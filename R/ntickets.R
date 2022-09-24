@@ -1,11 +1,11 @@
-#' Number of Tickets for Overbooking
+#' @title Number of Tickets for Overbooking
 #'
 #' @param N number of seats
 #' @param gamma probability of overbooking
 #' @param p probability of each passenger showing up
 #'
 #' @importFrom graphics abline par points
-#' @importFrom stats pnorm
+#' @importFrom stats pnorm qnorm
 #'
 #' @return plots of objective function using discrete and continuous distributions
 #'
