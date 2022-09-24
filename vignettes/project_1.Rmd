@@ -25,7 +25,9 @@ This project includes three functions:
 3. Fisher's test
 
 # One-way table analysis
-With an input of a file name, this function will output a table, bar plots, the results for hypothesis test (all cell proportions are not significantly different), and confidence intervals for all cell values. 
+With an input of a file name, this function will output a table, bar plots, the results for hypothesis test (all cell proportions are not significantly different), and confidence intervals for all cell values.\  
+
+The approximate confidence intervals for the frequencies of Agree Strong and Agree Some opinions do not contain 0.25. Also, the Chi-square test results shows the X-squared of 14.8049 and the p-value = 0.001991. We can reject the null hypothesis that the opinions are evenly divided. Therefore, using alpha = 0.05, we can make the the conclusion that the opinions of Internet users are not evenly divided among the four categories.
 ```{r}
 my_one_way <- function (filename, alpha = 0.05){
   # Import the data
@@ -60,7 +62,7 @@ my_one_way <- function (filename, alpha = 0.05){
   ciu = phat+z*sqrt(phat*(1-phat)/sum(Number))
   ci = list(cil,ciu)
 
-  conf_int = paste0("The approximate confidence interval for the frequency is", Category, " is: (",
+  conf_int = paste0("The approximate confidence interval for the frequency of ", Category, " is: (",
                     round(as.numeric(unlist(ci[1])),3), ", ",round(as.numeric(unlist(ci[2])),3), ").")
 
   # Output list
@@ -68,8 +70,14 @@ my_one_way <- function (filename, alpha = 0.05){
 }
 ```
 
+```{r}
+my_one_way("SCAN")
+```
+
 # Two-way analysis
-With an input of a file name, this function will output a contingency table, bar plots, expected frequencies for all cells, Chi-squared test results, and a plot of chi-squared test rejection region. 
+With an input of a file name, this function will output a contingency table, bar plots, expected frequencies for all cells, Chi-squared test results, and a plot of chi-squared test rejection region.\ 
+ 
+The null hypothesis is that injury rate for collision claims does not depend on Accord model. The alternative hypothesis is that injury rate for collision claims depends on Accord model. The chi-sq statistic is 1346.1, this number is significantly larger than 3.8415. Also, the p value is significantly less than 0.05. Therefore, we would reject the null hypothesis and conclude that and injury rate for collision claims depends on Accord model.
 ```{r}
 my_two_way = function (filename, alpha = 0.05){
 
@@ -132,8 +140,16 @@ my_two_way = function (filename, alpha = 0.05){
 }
 ```
 
+```{r}
+my_two_way("HYBRID")
+```
+
 # Fisher's test
-With an input of file name, this function will output a contingency table, bar plots, mosaic plot, Chi-squared test, and fisher's test. 
+With an input of file name, this function will output a contingency table, bar plots, mosaic plot, Chi-squared test, and fisher's test.\
+
+We use fisher’s exact test because the expected value is not greater than or equal to 5, which is the assumption of chi-square test. The Chi-square approximation could be incorrect.
+
+The fisher’s test shows the p-value of 0.2616, which is larger than alpha = 0.05. Therefore, we fail to reject the null hypothesis that the distribution of ARI scores are not different between the two types of bonding adhesives.
 ```{r}
 my_fishser = function (filename){
 
@@ -170,5 +186,9 @@ my_fishser = function (filename){
 
 }
 
+```
+
+```{r}
+my_fishser("BONDING")
 ```
 
