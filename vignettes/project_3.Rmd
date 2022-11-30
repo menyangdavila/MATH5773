@@ -1,0 +1,96 @@
+---
+title: "Project_3"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Project_3}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Description
+This project includes 4 functions to solve MLR problems. The PRODQUAL data set from the textbook is used to exemplify the use of these functions.  
+  
+The experiment is conducted under different combinations of temperature and pressure, and four independent inspectors assign a quality score between 0 and 100 to each product. The temperature is between 80 to 120 degrees, and the pressure is between 50 and 60 pounds per square inch. This data set contains 3 variables and 27 observations. 
+```{r setup}
+library(MATH5773FALLdavi0682)
+prodqual <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","PRODQUAL",'.xls'))
+head(prodqual)
+```
+
+## Function 1
+Function 1 examines the validity of the MLR model as applied to the data set. There are 4 key linear model assumptions.  
+  
+1. The mean of $\epsilon$ is 0: This function first plots the residuals to fitted value to assess whether the residuals appear to form an equal spread around zero. 
+  
+2. Constant Variance: This function then outputs the Scale-Location plot to evaluate whether the residuals are the same across all values of the fitted variable.  
+  
+3. Normality: This function then uses Shapiro-Wilk test to determine whether the residuals follow a normal distribution.
+  
+4. Independence: The assumption that the random errors are independent is most often violated for time-series data. Since the data on the performance of diesel engine were collected independently, the assumption of independent errors is most likely satisfied.  
+  
+  
+This function first plots the corresponding response surface. To check for the zero mean, it prints the residuals versus fitted values plot. It shows that the residual terms randomly distributed around zero, providing reasonable evidence on the validity of the first assumption. To check for constant variance, it prints the scale-location plot. The red horizontal line suggest that the residuals have constant variance. To check for normality, it outputs the results of Shapiro-Wilk test. The p-value is 0.931, and we can not reject the null hypothesis that the residuals do not have a normal distribution. 
+
+```{r, fig.width = 7, fig.height = 5}
+my_validity(dataframe = prodqual)
+```
+
+## Function 2
+With the input of data set, iteration time and significance level, this function carries out a bootstrap analysis and performs a classical MLR analysis to estimate the parameters of the MLR. It produces the command line statistics and compares the point and interval estimates from both methods. The estimates over the iterations are also plotted.  
+  
+The MLR model suggested by the book contains two independent quantitative variables, TEMP and PRESSURE, and their interaction and quadratic terms. 
+$$Quality = \beta_0+\beta_1\cdot Temp + \beta_2\cdot Pressure + \beta_3\cdot Temp*Pressure + \beta_4\cdot {Temp}^2 + \beta_5\cdot {Pressure}^2$$  
+This functions first uses geometric method to calculate the coefficients, and it identifies and stores the singulars. Then is uses bootstrapping to re-sample and plots the distributions of the coefficients. 
+```{r, fig.width = 7, fig.height = 5}
+my_bootstrap(df = prodqual, iter = 10000, alpha = 0.05)
+```
+
+## Function 3
+This function performs a Bayesian analysis to find point and interval estimates along with classical estimates. It uses the funtions from MCMCpack and bayesplot packages to perform the Bayesian regression analysis.  
+  
+The prior is created by summarizing the evidence for the parameter $\theta$ without using the data on hand, and for MLR, $\theta = (\beta, \sigma^2)$. Each $\beta$ is given the following prior:
+$$\beta \sim N(b_0, B_0^{-1})$$
+$$\sigma^{-2}\sim Gamma(c_0/2, d_0/2)$$
+Since we have little knowledge about $\theta$, we will use the low impact prior assigned by default, where $b0 = 0$, $B0 = 0$, $c0 = 0.001$, and $d0 = 0.001$.
+
+Then this function performs the diagnostic tests of convergence to the equilibrium distribution of the Markov chain. It uses two functions from the coda package: heidel.diag implements a convergence diagnostic, and removes up to half the chain in order to ensure that the means are estimated from a chain that has converged; geweke.diag performs a convergence diagnostic for Markov chains based on a test for equality of the means of the first and last part of a Markov chain (by default the first 10% and the last 50%). If the samples are drawn from the stationary distribution of the chain, the two means are equal and Geweke’s statistic has an asymptotically standard normal distribution.  
+  
+This functions outputs the summary of the quantiles and means for the posteriors, point and interval estimates for the classical analysis, and the results for posterior diagnostic test. The summary statistics show that classical and Bayesian estimates are quite different. In addition, this function prints the marginal distribution posterior plots, posterior MCMC trace and history plots.
+
+```{r, fig.width = 7, fig.height = 5}
+my_bayesian(df = prodqual)
+```
+
+
+## Function 4
+This function produces a shiny server interactive plot useful for MLR.   
+
+1. The first tab shows data summary and the first 6 rows or all rows of the data set.
+
+2. The second tab shows the interaction plot, which can help us decide whether the interaction term is necessary for the model. The unparalleled lines suggest that the association between dependent variable and one independent variable varies as the other independent variable changes. Also, controlling one factor, we can see an nonlinear relationship between the dependent variable and the independent variable. Therefore, we include both interaction terms and quadratic terms in the model.
+
+3. The third tab shows the results of ANOVA analysis. For the ANOVA test, this function first converts the two quantitative independent variables to categorical variables, as this test is for comparing the means of the subgroups.We can choose either the ANOVA test for the model (F-statistics) or the pairwise comparison among all the treatment.  
+
+4. The fourth tab shows the model summary and the ANOVA analysis. There are two alternative models: one has the quadratic terms and the other one does not. The utility of those two models can be evaluated using the adjusted r-squared. 
+```{r}
+# shiny_project3()
+```
+
+![Shiny App 1](C:/PACKAGES/MATH5773FALLdavi0682/vignettes/shinyscreenshot1.png){width=90%}
+![Shiny App 21](C:/PACKAGES/MATH5773FALLdavi0682/vignettes/shinyscreenshot2.png){width=90%}
+![Shiny App 3](C:/PACKAGES/MATH5773FALLdavi0682/vignettes/shinyscreenshot3.png){width=90%}
+![Shiny App 4](C:/PACKAGES/MATH5773FALLdavi0682/vignettes/shinyscreenshot4.png){width=90%}
+![Shiny App 5](C:/PACKAGES/MATH5773FALLdavi0682/vignettes/shinyscreenshot5.png){width=90%}
+![Shiny App 6](C:/PACKAGES/MATH5773FALLdavi0682/vignettes/shinyscreenshot6.png){width=90%}
+
+
+
+
+

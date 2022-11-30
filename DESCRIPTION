@@ -16,4 +16,12 @@ VignetteBuilder: knitr
 Imports: 
     ggplot2,
     readxl,
-    s20x
+    s20x,
+    corrplot,
+    car,
+    plot3D,
+    purrr,
+    shiny,
+    coda,
+    MCMCpack,
+    bayesplot

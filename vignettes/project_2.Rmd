@@ -1,0 +1,136 @@
+---
+title: "Project_2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{project_2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5773FALLdavi0682)
+```
+
+This project contains two functions to analyze MLR data. The data are from chapter 12.80 SYNFUELS.A test was conducted to evaluate the performances of a diesel engine run on DF-2, Blended, and Advanced Blended Fuels.
+
+## 1. Data
+The data frame contains the experimental results for the performance measure, mass burning rate per degree of
+crank angle, with different brake powers (kilowatts) and fuel types.  
+  
+```{r}
+fuels <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","SYNFUELS",'.xls'))
+```
+
+## 2. Function for residual analysis
+The MLR model suggested by the book contains on independent quantitative variable (BrakePow) and two independent categorical variables (X1: DF2; X2: BLN). 
+$$BurnRate = \beta_0+\beta_1\cdot BrakePow + \beta_2\cdot X1 + \beta_3\cdot X2 + \beta_4\cdot BrakePow\times X1 + \beta_5\cdot BrakePow\times X2$$
+  
+The function my_residual and my_model_plot checks for 4 key linear model assumptions. 
+
+### Assumption 1: The mean of $\epsilon$ is 0
+This function first plots the residuals to fitted value to assess whether the residuals appear to form an equal spread around zero. The plot suggests that the residuals appear to have a mean value of zero.  
+  
+### Assumption 2: Constant Variance
+This function then outputs the Scale-Location plot to evaluate whether the residuals are the same across all values of the fitted variable. It shows that the red line is not horizontal across the plot. Therefore, the assumption of homoscedasticity is likely to be violated.  
+  
+### Assumption 3: Normality
+This function then plots a Q-Q plot to determine whether the residuals follow a normal distribution. It shows that the residual values in the plot fall along a roughly straight line at a 45-degree angle, which suggests that the residuals are normally distributed.  
+  
+### Assumption 4: Independence
+The assumption that the random errors are independent is most often violated for time-series data. Since the data on the performance of diesel engine were collected independently, the assumption of independent errors is most likely satisfied.
+```{r}
+# my_residual <- function(dataframe){
+# 
+#   # fit the model - linearity
+#   ylm <- lm(BurnRate ~ BrakePow + X1 + X2 + BrakePow:X1 + BrakePow:X2, data = dataframe)
+#   sum = summary(ylm)
+# 
+#   # plot a scatter plot of model 1: residuals vs fitted value
+#   s20x::trendscatter(residuals(ylm)~fitted(ylm), main="Residuals vs Fitted Plot")
+# 
+#   ## homoscedasticity
+#   plot(ylm,3)
+#
+#   ## qq plot to check for normality
+#   qqnorm(residuals(ylm), main = "Q-Q Plot - Check for normality", datax=TRUE)
+#   qqline(residuals(ylm), datax = TRUE)
+# 
+#   ## density plot - normality
+#   plot(density(residuals(ylm)), main = "Density - Residuals", col = c('red'),xlab = "Residuals")
+# 
+#   list(model_summary = sum)
+# }
+```
+
+
+```{r, fig.width = 6, fig.height = 4}
+my_residual(fuels)
+```
+
+
+## 3. Function for model plotting and analysis
+This function first output the correlations among all the variable, and it shows that BurnRate is negatively correlated with DF2 fuel (-0.505) and positively correlated with BLN fuel (0.218), which preliminary suggests that the performance could be different among different types of fuels.  
+  
+To further evaluate whether the performance differ for the three fuels types, this function first estimate the simple linear regression with the assumption that all fuels types perform the same. As shown below, the straight-line relationship between mean performance and engine speed is the same for all three fuels.  
+  
+Then this function estimate the multiple linear regression using the model that contains one quantitative independent variable, two qualitative variables, and interaction terms. This model implies that the straight-line relationship between mean performance and engine differ for all three fuels (i.e., the slopes vary among the three subgroups). As shown below, the slopes for each fuel type are different.  
+  
+The regression summary shows that MLR has an adjusted r-squared of 0.90, which is bigger than the adjusted r-squared of 0.42 for SLR. Also, the p-value of interaction term (BrakePow*X1) is 0.00337, which is statistically significant from zero, indicating a different performance between DF2 and the other two types of fuels.  
+  
+Lastly, the model summary shows that the slope of Advanced Timing is $\beta_1$ = 7.815, which serves as the baseline group. The Slope of DF-2 is $\beta_1 - \beta_4$ = 7.815-5.675 = 2.14. The slope of Blended is $\beta_1 - \beta_5$ = 7.815-2.95 = 4.865.
+
+```{r}
+# my_model_plot <- function(dataframe){
+#   BrakePow <- NULL
+#   X1 <- NULL
+#   X2 <- NULL
+#   BurnRate <- NULL
+#   FuelType <- NULL
+# 
+#   # correlation - independence
+#   C = cor(dataframe[c("BrakePow","X1","X2","BurnRate")])
+#   correlation = corrplot::corrplot(C, method = 'number')
+# 
+#   # fit the model
+#   ylm1 <- lm(BurnRate ~ BrakePow + X1 + X2 + BrakePow:X1 + BrakePow:X2,data = dataframe)
+#   sum1 = summary(ylm1)
+# 
+#   ylm2 <- lm(BurnRate ~ BrakePow,data = dataframe)
+#   sum2 = summary(ylm2)
+# 
+#   # subset data based on the type of fuels
+#   sub_df2 <- subset(dataframe, X1 == 1)
+#   sub_blended <- subset(dataframe, X2 == 1)
+#   sub_adv <- subset(dataframe, X1 == 0 & X2 == 0)
+# 
+#   # fit the model for each subset
+#   ylm_df2 <- lm(BurnRate ~ BrakePow, data = sub_df2)
+#   ylm_blended <- lm(BurnRate ~ BrakePow, data = sub_blended)
+#   ylm_adv <- lm(BurnRate ~ BrakePow, data = sub_adv)
+# 
+#   # plot the model
+#   g1 <- ggplot2::ggplot(dataframe, ggplot2::aes(BrakePow, BurnRate, col=FuelType, lty=FuelType)) +
+#     ggplot2::geom_point() +
+#     ggplot2::geom_smooth(formula = y ~ x, method="lm", se=FALSE) +
+#     ggplot2::ggtitle("Burn Rate vs. Brake Pow")
+# 
+#   g2 <- ggplot2::ggplot(dataframe, ggplot2::aes(BrakePow, BurnRate)) +
+#     ggplot2::geom_point(ggplot2::aes(colour = FuelType)) +
+#     ggplot2::geom_smooth(formula = y ~ x, method="lm", se=FALSE) +
+#     ggplot2::ggtitle("Burn Rate vs. Brake Pow")
+# 
+#   list(model_1_summary = sum1, model_2_summary = sum2, correlation = correlation, SLR_R_Squared = sum2$r.squared, MLR_R_Squared = sum1$r.squared, plot_sub_sample = g1, plot_full_sample = g2)
+# }
+```
+
+```{r, fig.width = 6, fig.height = 4}
+my_model_plot(fuels)
+```
+

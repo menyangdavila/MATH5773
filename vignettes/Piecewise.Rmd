@@ -1,0 +1,112 @@
+---
+title: "Piecewise"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Piecewise}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5773FALLdavi0682)
+```
+The golden-section search is an efficient technique to progressively reduce the interval locating either the minimum or maximum of a function. The theory underlying is that the minimum (maximum) will lie within the interval defined by the two points adjacent to the point with the smallest (largest) value has been observed. As new values being evaluated, the search interval gets narrower, and the functions minimum or maximum is guaranteed to lie in the updated interval. When the interval length is narrowed to a certain extent, the points within the interval are all close to the  extremum, so each point within the interval can be regarded as an approximation of the extremum point. Therefore, golden-section search can be used for function optimization.  
+  
+  
+## Function 1
+This function plots $R^2$ versus $x_k$ where $x_k$ is the knot position (in the range of WEIGHT).
+```{r}
+# mypiece_fit <- function(data){
+#   Rsq <- vector(mode = "numeric", length = length(data$WEIGHT))
+#   aic <- vector(mode = "numeric", length = length(data$WEIGHT))
+# 
+#   for(i in seq_along(data$WEIGHT)){
+#     xk <- data$WEIGHT[i]
+#     x <- (data$WEIGHT > xk)*(data$WEIGHT - xk)
+#     ylm <- lm(data$LENGTH ~ data$WEIGHT + x)
+#     smm <- summary(ylm)
+#     Rsq[i] <- smm$r.squared
+#     cf <- coefficients(smm)
+#     aic[i] <- AIC(ylm)
+#   }
+# 
+#   RSQ_plot <- plot(data$WEIGHT,
+#                    Rsq,
+#                    xlab = expression(x[k]),
+#                    type = "p",
+#                    pch = 21,
+#                    bg = "blue",
+#                    cex = 1.2)
+# 
+#   AIC_plot <- plot(data$WEIGHT,
+#                    aic,
+#                    xlab = expression(x[k]),
+#                    type = "p",
+#                    pch = 21,
+#                    bg = "blue",
+#                    cex = 1.2)
+# 
+# }
+```
+
+```{r, fig.width = 6, fig.height = 4}
+ddt = readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","DDT",'.xls'))
+mypiece_fit(data = ddt)
+```
+  
+## Function 2
+This function finds the co-ordinates $x_k$ and $y_k$, and the value of $R^2$ and $AIC$ for the optimal knot.
+
+```{r}
+# mypiece_optimal = function(data){
+#   WEIGHT <- NULL
+# 
+#   Rsq <- vector(mode = "numeric", length = length(data$WEIGHT))
+#   aic <- vector(mode = "numeric", length = length(data$WEIGHT))
+# 
+#   for(i in seq_along(data$WEIGHT)){
+#     xk <- data$WEIGHT[i]
+#     x <- (data$WEIGHT > xk)*(data$WEIGHT - xk)
+#     ylm <- lm(data$LENGTH ~ data$WEIGHT + x)
+#     smm <- summary(ylm)
+#     Rsq[i] <- smm$r.squared
+#     cf <- coefficients(smm)
+#     aic[i] <- AIC(ylm)
+#   }
+# 
+#   n = which.max(Rsq)
+#   weight_k = data$WEIGHT[n]
+#   length_k = data$LENGTH[n]
+#   max_rsq = Rsq[n]
+#   min_aic = aic[n]
+# 
+#   df=within(data, {knot = (WEIGHT - weight_k)*(WEIGHT > weight_k)})
+#   lm_piecewise = lm(LENGTH ~ WEIGHT + knot, data=df)
+#   betas = coef(lm_piecewise)
+# 
+#   piece_fuction = function(x){betas[1]+betas[2]*(x) + betas[3]*(x-weight_k)*(x - weight_k>0)}
+# 
+#   with(data,plot(WEIGHT,LENGTH,
+#                  pch = 21,
+#                  cex=1,
+#                  bg="pink",
+#                  main="LENGTH Vs WEIGHT - Piecewise Regression"))
+# 
+#   curve(piece_fuction(x), add=TRUE, lwd=2,col="Black")
+# 
+#   list(x_k = weight_k, y_k = length_k, optimized_rsq = max_rsq, optimized_aic = min_aic)
+# }
+```
+
+
+```{r, fig.width = 6, fig.height = 4}
+mypiece_optimal(data = ddt)
+```
+

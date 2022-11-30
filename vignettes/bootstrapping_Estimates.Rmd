@@ -1,0 +1,164 @@
+---
+title: "Bootstrapping_Estimates"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{bootstrapping_Estimates}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5773FALLdavi0682)
+```
+
+This function can be used to find point and $(1−\alpha)*100\%$ interval estimates for each of $\beta_0,\ \beta_1,\ \beta_2$. It will also create histograms for the sampling distribution of each of the estimates.
+
+## Task 1
+Add the following funtion in the package, which will output an invisible named list containing a data frame of the $\hat\beta$ iterations, the confidence intervals and point estimates along with iter, model and alpha.
+```{r}
+myboot<- function(df, model, iter, alpha){
+  # Specify two dependent variables
+  switch(model,
+         model1= Y<-"Diameter",
+         model2= Y<-"Density")
+
+  # Point estimate
+  mx0 <- matrix(c(1),nrow = 18,ncol = 1)
+  mx <- matrix(c(mx0,df$MassFlux,df$HeatFlux),nrow=18,ncol=3)
+  point <- solve(t(mx)%*%mx)%*%t(mx)%*%as.matrix(df[Y])
+
+  # Bootstrap estimates
+  hbetas <- matrix(NA, nrow = iter, ncol = 3)
+
+  for(j in 1:iter){
+    ind <- sample(1:18,18, replace = TRUE )
+
+    # Create matrices using the data
+    mx0 <- matrix(c(1),nrow = 18,ncol = 1)
+    mx <- matrix(c(mx0,df[ind,]$MassFlux,df[ind,]$HeatFlux),nrow=18,ncol=3)
+
+    # Use matrices to calculate estimates
+    bhat <- solve(t(mx)%*%mx)%*%t(mx)%*%as.matrix(df[ind,Y])
+    hbetas[j,] <- bhat
+  }
+  layout(matrix(1:3, nrow = 1,ncol = 3))
+
+  # Display output
+  hist(hbetas[,1],
+       xlab = expression(widehat(beta)[0]),
+       main = "Histogram of intercept estimate")
+
+  hist(hbetas[,2],
+       xlab = expression(widehat(beta)[1]),
+       main = "Histogram of slope 1 estimate")
+
+  hist(hbetas[,3],
+       xlab = expression(widehat(beta)[2]),
+       main = "Histogram of slope 2 estimate")
+
+  beta0 <- hbetas[,1]
+  ci1=quantile(beta0,c(alpha/2,1-alpha/2),na.rm=TRUE)
+
+  beta1 <- hbetas[,2]
+  ci2=quantile(beta1,c(alpha/2,1-alpha/2),na.rm=TRUE)
+
+  beta2 <- hbetas[,3]
+  ci3=quantile(beta2,c(alpha/2,1-alpha/2),na.rm=TRUE)
+
+  invisible(list(hat_betas = hbetas, point_estimate  = point, "CI for Intercept"=ci1,"CI for Beta1"=ci2,
+                 "CI for Beta2"=ci3, model = model, iteration_times = iter, alpha = alpha))
+}
+```
+
+## Task 2 
+Added to the package: MATH5773FALLdavi0682
+
+## Task 3
+For model 1, in which the dependent variable is bubble diameter. From the result of the point estimate, the multiple regression model can be written as: $y_1 = 1.0884 - 0.0002\cdot x_1 - 0.0800\cdot x_2$  
+
+The confidence intervals of $\beta_0, \beta_1, \beta_2$ are obtained by taking the 2.5th and 97.5th percentile values from the bootstrapping estimates. 
+
+For model 2, in which the dependent variable is bubble density. From the result of the point estimate, the multiple regression model can be written as: $y_2 = 1-1030.0326 - 57.8994\cdot x_1 + 332037.0861\cdot x_2$  
+
+Similarly, the confidence intervals of $\beta_0, \beta_1, \beta_2$ are obtained by taking the 2.5th and 97.5th percentile values from the bootstrapping estimates.
+
+```{r, fig.width = 6, fig.height = 4}
+bubble <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","BUBBLE2",'.xls'))
+m1 <- myboot(df = bubble, model = "model1", iter = 2000, alpha = 0.05)
+str(m1)
+
+m2 <- myboot(df = bubble, model = "model2", iter = 1000, alpha = 0.05)
+str(m1)
+```
+
+## Task 4 
+11.30  
+a. The equation of interaction model: $FORCE = \beta_0 + \beta_1 \cdot SPEED + \beta_2 \cdot RATE + \beta_3 \cdot PCTWT + \beta_4 \cdot SPEED\times RATE +  \beta_5 \cdot SPEED\times PCTWT + \beta_6 \cdot RATE\times PCTWT$
+
+b.The slope shown below represents the change in force for every 1% increase in weight when rate is fixed at 50mm/minute and speed is fixed at 1000rpm.
+$$slope_{weight(50,1000)} = \beta_3\ + 1000*\beta_5\ + 50*\beta_6$$
+
+c.The slope shown below represents the change in force for every 1% increase in weight when rate is fixed at 150mm/minute and speed is fixed at 1000rpm.
+$$slope_{weight(250,1000)} = \beta_3\ + 1000*\beta_5\ + 150*\beta_6$$
+d.$FORCE = 343.1 + 0.01812 \cdot SPEED + 1.988 \cdot RATE + 9.375 \cdot PCTWT - 0.0000125 \cdot SPEED\times RATE -  0.000375 \cdot SPEED\times PCTWT + 0.0125 \cdot RATE\times PCTWT$
+```{r}
+drillmetal <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","DRILLMETAL",'.xls'))
+names(drillmetal)
+lm.drill <- lm(FORCE ~ SPEED + RATE + PCTWT + SPEED:RATE + SPEED:PCTWT + RATE:PCTWT, data = drillmetal)
+summary(lm.drill)
+```
+
+e. $\beta_6$ needs to be tested to determine if the slopes in parts b and c are different. The $p-value$ is 0.232036, which is greater than $\alpha$ = 0.05, suggesting that we failed to reject the null hypothesis that the slops are indifferent in part b and c. Therefore, the slops in b and c are not statistically different. 
+
+
+## Task 5
+11.11  
+a. The test statistic and p-value of the test are $F$ = 28.65 and $p-value$ = 0. Since $p-value$ is smaller than $\alpha$ = 0.05, there is sufficient evidence to conclude that the model fit is statistically useful.
+```{r}
+boilers <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","BOILERS",'.xls'))
+names(boilers)
+lm.boilers <- lm(`Man-HRs` ~ Capacity + Pressure + Capacity:Pressure, data = boilers)
+summary(lm.boilers)
+```
+
+b. The test statistic and two-tailed $p-value$ are $t$ = 2.233 and $p-value$ = 0.0327. The upper-tailed $p-value$  = 0.032662/2 = 0.0164, which is smaller than $\alpha$ = 0.05. Therefore, we can reject the null hypothesis and conclude that the rate of change of man-hours with capacity increases as the design pressure increases.  
+
+c. The slope shown below represents the change in man-hours for every 1-psi increase in design pressure when boiler capacity is 750 thousand pounds/hour.
+$$slope_{pressure(750)} = \beta_2\ + 750*\beta_3 = -1.53 + 0.003*2*750 = 0.72$$
+
+## Task 6
+11.12  
+a. the scatter plot shows that usage appears to have a curvilinear relation with the size of the home, which provides some evidence for including the quadratic term in the model.
+```{r, fig.width = 6, fig.height = 4}
+kwhrs <- readxl::read_excel(paste0("C:/Users/sergi/OneDrive/Desktop/MATH5773/Excel/","KWHRS",'.xls'))
+plot(kwhrs$SIZE,kwhrs$USAGE, main="Scatterplot", xlab="SIZE", ylab="USAGE", pch=19)
+```
+
+b. $Usage = -806.7 + 1.962*Size - 0.0003*Size^2 $
+```{r}
+qua.kwhrs <- lm(USAGE ~ SIZE + SIZESQ, data = kwhrs)
+summary(qua.kwhrs)
+```
+
+c. The graph shows that the model is a good fit to the data. Also, the $R^2_a$ = 0.9735 provides a numerical measure of it, which implies that about 97.35% of the sample variation in electrical usage
+can be explained by the quadratic model after adjusting for sample size and degrees of freedom.
+```{r, fig.width = 6, fig.height = 4}
+size = seq(1000, 4000, 1)
+plot(kwhrs$SIZE,kwhrs$USAGE, main="Scatterplot", xlab="Size ", ylab="Electrical Usage", pch=19)
+lines(size, predict(qua.kwhrs,list(SIZE=size, SIZESQ=size^2)), col = "darkgreen", lwd = 3)  #Add fitted line
+```
+
+d. When $Size = 0$, the estimated electrical usage from the model is negative, thus the interpretation of the intercept $\beta_0$ is not meaningful. The estimated coefficient of $Size$, $\beta_1$ does not have a meaningful interpretation in the quadratic by itself. The sign of the coefficient of the quadratic term, $\beta_2$, implies downward concavity. The plot in part c suggests that the positive relation between electrical usage and size is diminishing, and the estimated electrical usage is leveling off as the home sizes increase beyond 2,500 square feet model.  
+
+e. The test statistic and two-tailed $p-value$ are $F$ = 258.1 and $p-value$ = 0. The $p-value$ is smaller than $\alpha$ = 0.01. Therefore, we can reject the null hypothesis and conclude that the
+overall model is a useful predictor of electrical usage.
+
+f. The test statistic and two-tailed $p-value$ are $t$ = -10.599 and $p-value$ = 0.00000019. The upper-tailed $p-value$  = 0.00000019/2 = 0.00000009, which is smaller than $\alpha$ = 0.01. Therefore, we can reject the null hypothesis, and these is strong evidence that electrical usage increases more slowly per square foot for large homes than for small homes.
+
